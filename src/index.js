@@ -11,7 +11,7 @@ import {
 (async () => {
   const browser = await puppeteer.launch({ headless: "new" });
   const page = await browser.newPage();
-  const timeout = 5000;
+  const timeout = 10000;
   page.setDefaultTimeout(timeout);
 
   const flags = {
@@ -21,7 +21,7 @@ import {
   };
   const config = desktopConfig;
   const lhFlow = await startFlow(page, {
-    name: "Recording 24/04/2023 at 13:28:28",
+    name: "MTVUutiset.fi recording",
     config,
     flags,
   });
@@ -32,7 +32,11 @@ import {
       height: 1304,
     });
   }
-  await lhFlow.startNavigation();
+
+  /********************************************
+   * Open MTVUutiset.fi
+   ********************************************/
+  await lhFlow.startNavigation({ name: "Navigate to MTVUutiset.fi" });
   {
     const targetPage = page;
     const promises = [];
@@ -41,37 +45,90 @@ import {
     await Promise.all(promises);
   }
   await lhFlow.endNavigation();
-  await lhFlow.startTimespan();
+
+  /********************************************
+   * Accept Consent
+   ********************************************/
+  await lhFlow.startTimespan({ name: "Accept consent" });
+  const consentSelectors = [
+    ["aria/Hyväksyn"],
+    ["#onetrust-accept-btn-handler"],
+    ['xpath///*[@id="onetrust-accept-btn-handler"]'],
+    ["pierce/#onetrust-accept-btn-handler"],
+  ];
   {
     const targetPage = page;
-    await scrollIntoViewIfNeeded(
-      [
-        ["aria/Hyväksyn"],
-        ["#onetrust-accept-btn-handler"],
-        ['xpath///*[@id="onetrust-accept-btn-handler"]'],
-        ["pierce/#onetrust-accept-btn-handler"],
-      ],
-      targetPage,
-      timeout
-    );
-    const element = await waitForSelectors(
-      [
-        ["aria/Hyväksyn"],
-        ["#onetrust-accept-btn-handler"],
-        ['xpath///*[@id="onetrust-accept-btn-handler"]'],
-        ["pierce/#onetrust-accept-btn-handler"],
-      ],
-      targetPage,
-      { timeout, visible: true }
-    );
+    await scrollIntoViewIfNeeded(consentSelectors, targetPage, timeout);
+    const element = await waitForSelectors(consentSelectors, targetPage, {
+      timeout,
+      visible: true,
+    });
     await element.click({
       offset: {
-        x: 71,
-        y: 12.609375,
+        x: 88.5,
+        y: 31.609375,
       },
     });
   }
   await lhFlow.endTimespan();
+
+  /********************************************
+   * Navigate to weather page
+   ********************************************/
+  await lhFlow.startNavigation({ name: "Navigate to weather page" });
+  const weatherPageSelectors = [
+    ["span.weather-temp"],
+    ['xpath///*[@id="weather-data"]/div/div/span[1]'],
+    ["pierce/span.weather-temp"],
+  ];
+  {
+    const targetPage = page;
+    const promises = [];
+    promises.push(targetPage.waitForNavigation());
+    await scrollIntoViewIfNeeded(weatherPageSelectors, targetPage, timeout);
+    const element = await waitForSelectors(weatherPageSelectors, targetPage, {
+      timeout,
+      visible: true,
+    });
+    await element.click({
+      offset: {
+        x: 8.5,
+        y: 16.5,
+      },
+    });
+    await Promise.all(promises);
+  }
+  await lhFlow.endNavigation();
+
+  /********************************************
+   * Navigate to LIVE page
+   ********************************************/
+  const livePageSelectors = [
+    ["aria/LIVE"],
+    ["#navigation-live"],
+    ['xpath///*[@id="navigation-live"]'],
+    ["pierce/#navigation-live"],
+  ];
+  await lhFlow.startNavigation({ name: "Navigate to LIVE page" });
+  {
+    const targetPage = page;
+    const promises = [];
+    promises.push(targetPage.waitForNavigation());
+    await scrollIntoViewIfNeeded(livePageSelectors, targetPage, timeout);
+    const element = await waitForSelectors(livePageSelectors, targetPage, {
+      timeout,
+      visible: true,
+    });
+    await element.click({
+      offset: {
+        y: 11.5,
+        x: 28.5,
+      },
+    });
+    await Promise.all(promises);
+  }
+  await lhFlow.endNavigation();
+
   const lhFlowReport = await lhFlow.generateReport();
   const filename = "flow.report.html";
   const filePath = `${reportPath}/${filename}`;
